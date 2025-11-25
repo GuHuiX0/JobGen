@@ -1,0 +1,62 @@
+{
+  "name": "ai-coach-backend",
+  "version": "1.0.0",
+  "description": "AI Interview Coach Backend API",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "format": "prettier --write src/**/*.js",
+    "format:check": "prettier --check src/**/*.js",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/unit_test/",
+    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/unit_test/",
+    "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js test/integration/",
+    "test:all": "npm run test:unit && npm run test:integration",
+    "test:ci": "npm run lint && npm run format:check && npm run test:all",
+    "build": "echo \"No build step required for Node.js\" && exit 0"
+  },
+  "keywords": [
+    "ai",
+    "interview",
+    "coach",
+    "api",
+    "nodejs",
+    "express",
+    "javascript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.932.0",
+    "@aws-sdk/s3-request-presigner": "^3.470.0",
+    "axios": "^1.5.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.6.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.20.1",
+    "swagger-ui-express": "^5.0.0",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.1.1",
+    "jest": "^30.2.0",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.2.5",
+    "supertest": "^7.1.4"
+  }
+}

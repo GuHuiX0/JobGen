@@ -1,0 +1,579 @@
+{
+  "info": {
+    "name": "JobGen Interview Coach API",
+    "description": "Complete API collection for JobGen Interview Coach backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://job-gen.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "test_user_123",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE3NTk5ODMzNDM3MTR4NjkyNTg3NzYyMTE2NzU3NDAwIiwiZW1haWwiOiJseWIxMDEwNzUyNjU3QGdtYWlsLmNvbSIsImlhdCI6MTc2MjE3MjIwNiwibmJmIjoxNzYyMTcyMjA2LCJleHAiOjE3NjQ3NjQyMDZ9.VbFeBvthFXZzERp-E2ZbbeLm1EVoRLyY2DZMiI9xd8w",
+      "type": "string"
+    },
+    {
+      "key": "interview_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "story_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Info",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Get Interview Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/interview/types",
+              "host": ["{{base_url}}"],
+              "path": ["interview", "types"]
+            }
+          }
+        }
+      ]
+    },
+      {
+        "name": "Interview Management",
+        "item": [
+          {
+            "name": "Create Interview Session",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 201) {",
+                    "    const response = pm.response.json();",
+                    "    pm.collectionVariables.set('interview_id', response.interview_id);",
+                    "    console.log('Interview ID saved:', response.interview_id);",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ],
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"type\": \"behavioral\",\n  \"duration_seconds\": 1800,\n  \"question_count\": 5\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/interviews",
+                "host": ["{{base_url}}"],
+                "path": ["interviews"]
+              }
+            }
+          },
+          {
+            "name": "Generate Questions",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{jwt_token}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"type\": \"behavioral\",\n  \"count\": 5\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/questions/{{interview_id}}/questions",
+                "host": ["{{base_url}}"],
+                "path": ["questions", "{{interview_id}}", "questions"]
+              }
+            }
+          },
+          {
+            "name": "Submit Interview Responses",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"responses\": [\n    {\n      \"question_id\": \"q_1\",\n      \"text\": \"I once led a team project where we had to deliver results under tight deadlines. I organized daily stand-ups to track progress, delegated tasks based on team members' strengths, and ensured clear communication throughout. We delivered the project two days early with high quality.\",\n      \"elapsed_seconds\": 120\n    },\n    {\n      \"question_id\": \"q_2\",\n      \"text\": \"In my previous role, I handled a conflict between team members by first listening to both perspectives individually, then facilitating a constructive meeting where we found common ground. This improved team dynamics and productivity.\",\n      \"elapsed_seconds\": 150\n    }\n  ]\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/interviews/{{interview_id}}/submit",
+                "host": ["{{base_url}}"],
+                "path": ["interviews", "{{interview_id}}", "submit"]
+              }
+            }
+          },
+          {
+            "name": "Get Interview Feedback",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/interviews/{{interview_id}}/feedback",
+                "host": ["{{base_url}}"],
+                "path": ["interviews", "{{interview_id}}", "feedback"]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Question Hints",
+        "item": [
+          {
+            "name": "Generate Question Hint",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{jwt_token}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"prompt\": \"I'm not sure how to structure my answer using the STAR method\"\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/questions/{{interview_id}}/questions/{{interview_id}}_q_1/hint",
+                "host": ["{{base_url}}"],
+                "path": ["questions", "{{interview_id}}", "questions", "{{interview_id}}_q_1", "hint"]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Story Bank",
+        "item": [
+          {
+            "name": "Create Story",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 201) {",
+                    "    const response = pm.response.json();",
+                    "    pm.collectionVariables.set('story_id', response.story_id);",
+                    "    console.log('Story ID saved:', response.story_id);",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ],
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"interview_id\": \"{{interview_id}}\",\n  \"question_id\": \"q_1\",\n  \"response_id\": \"resp_1\",\n  \"title\": \"Leading a Team Under Pressure\",\n  \"transcript\": \"I once led a team project where we had to deliver results under tight deadlines. I organized daily stand-ups, delegated tasks effectively, and ensured clear communication. We delivered the project two days early.\",\n  \"tags\": [\"leadership\", \"teamwork\", \"deadline-management\"]\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/story-bank",
+                "host": ["{{base_url}}"],
+                "path": ["story-bank"]
+              }
+            }
+          },
+          {
+            "name": "Get All Stories",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/story-bank?page=1&size=10",
+                "host": ["{{base_url}}"],
+                "path": ["story-bank"],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1"
+                  },
+                  {
+                    "key": "size",
+                    "value": "10"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Stories by Tags",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/story-bank?page=1&size=10&tags=leadership,teamwork",
+                "host": ["{{base_url}}"],
+                "path": ["story-bank"],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1"
+                  },
+                  {
+                    "key": "size",
+                    "value": "10"
+                  },
+                  {
+                    "key": "tags",
+                    "value": "leadership,teamwork"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Story Tags",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/story-bank/tags",
+                "host": ["{{base_url}}"],
+                "path": ["story-bank", "tags"]
+              }
+            }
+          },
+          {
+            "name": "Get Specific Story",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/story-bank/{{story_id}}",
+                "host": ["{{base_url}}"],
+                "path": ["story-bank", "{{story_id}}"]
+              }
+            }
+          },
+          {
+            "name": "Update Story",
+            "request": {
+              "method": "PUT",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"title\": \"Updated: Leading Through Challenges\",\n  \"transcript\": \"Updated transcript with more details about how I handled the situation, including specific metrics and outcomes.\",\n  \"tags\": [\"leadership\", \"problem-solving\", \"adaptability\"]\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/story-bank/{{story_id}}",
+                "host": ["{{base_url}}"],
+                "path": ["story-bank", "{{story_id}}"]
+              }
+            }
+          },
+          {
+            "name": "Delete Story",
+            "request": {
+              "method": "DELETE",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/story-bank/{{story_id}}",
+                "host": ["{{base_url}}"],
+                "path": ["story-bank", "{{story_id}}"]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Dashboard Analytics",
+        "item": [
+          {
+            "name": "Get Readiness Trend (All)",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/dashboard/readiness-trend",
+                "host": ["{{base_url}}"],
+                "path": ["dashboard", "readiness-trend"]
+              }
+            }
+          },
+          {
+            "name": "Get Readiness Trend (Date Range)",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/dashboard/readiness-trend?from=2025-10-01&to=2025-11-03",
+                "host": ["{{base_url}}"],
+                "path": ["dashboard", "readiness-trend"],
+                "query": [
+                  {
+                    "key": "from",
+                    "value": "2025-10-01"
+                  },
+                  {
+                    "key": "to",
+                    "value": "2025-11-03"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Type Radar (90 days)",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/dashboard/type-radar?window=90d",
+                "host": ["{{base_url}}"],
+                "path": ["dashboard", "type-radar"],
+                "query": [
+                  {
+                    "key": "window",
+                    "value": "90d"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Type Radar (30 days)",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "url": {
+                "raw": "{{base_url}}/dashboard/type-radar?window=30d",
+                "host": ["{{base_url}}"],
+                "path": ["dashboard", "type-radar"],
+                "query": [
+                  {
+                    "key": "window",
+                    "value": "30d"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Signed URLs (S3)",
+        "item": [
+          {
+            "name": "Generate Signed URL (Generic)",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"key\": \"users/{{user_id}}/interviews/{{interview_id}}/audio/resp_1.webm\",\n  \"operation\": \"put\",\n  \"contentType\": \"audio/webm\",\n  \"expiresIn\": 3600\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/signed-url",
+                "host": ["{{base_url}}"],
+                "path": ["signed-url"]
+              }
+            }
+          },
+          {
+            "name": "Generate Audio Upload URL",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "x-user-id",
+                  "value": "{{user_id}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"interview_id\": \"{{interview_id}}\",\n  \"response_id\": \"resp_1\"\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/signed-url/audio",
+                "host": ["{{base_url}}"],
+                "path": ["signed-url", "audio"]
+              }
+            }
+          },
+          {
+            "name": "Get Download URL",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                "raw": "{{base_url}}/signed-url/users/{{user_id}}/interviews/{{interview_id}}/audio/resp_1.webm?expiresIn=3600",
+                "host": ["{{base_url}}"],
+                "path": ["signed-url", "users", "{{user_id}}", "interviews", "{{interview_id}}", "audio", "resp_1.webm"],
+                "query": [
+                  {
+                    "key": "expiresIn",
+                    "value": "3600"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Batch Generate Signed URLs",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"urls\": [\n    {\n      \"key\": \"users/{{user_id}}/interviews/{{interview_id}}/audio/resp_1.webm\",\n      \"operation\": \"get\",\n      \"expiresIn\": 3600\n    },\n    {\n      \"key\": \"users/{{user_id}}/interviews/{{interview_id}}/audio/resp_2.webm\",\n      \"operation\": \"get\",\n      \"expiresIn\": 3600\n    }\n  ]\n}"
+              },
+              "url": {
+                "raw": "{{base_url}}/signed-url/batch",
+                "host": ["{{base_url}}"],
+                "path": ["signed-url", "batch"]
+              }
+            }
+          }
+      ]
+    }
+  ]
+}

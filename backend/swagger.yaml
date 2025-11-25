@@ -1,0 +1,1376 @@
+openapi: 3.0.0
+info:
+  title: JobGen Interview Coach API
+  description: Backend API for AI-powered interview coaching platform with comprehensive interview management, dashboard analytics, and story banking
+  version: 1.0.0
+  contact:
+    name: JobGen Team
+    email: support@jobgen.com
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+  - url: https://job-gen.onrender.com
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  environment:
+                    type: string
+                    example: development
+
+  # Interview Management Endpoints
+  /interviews:
+    post:
+      summary: Create a new interview session
+      description: Creates a new interview session with specified type, duration, and question count
+      tags:
+        - Interview
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - duration_seconds
+                - question_count
+              properties:
+                type:
+                  type: string
+                  enum: [behavioral, technical, psychometric]
+                  example: behavioral
+                duration_seconds:
+                  type: integer
+                  example: 1800
+                question_count:
+                  type: integer
+                  example: 5
+      responses:
+        '201':
+          description: Interview created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interview_id:
+                    type: string
+                    example: "ivw_1729234567890_abc123def"
+                  type:
+                    type: string
+                    example: behavioral
+                  question_count:
+                    type: integer
+                    example: 5
+                  status:
+                    type: string
+                    example: created
+                  created_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+  /interviews/{id}/submit:
+    post:
+      summary: Submit interview responses
+      description: Submits responses for an interview session
+      tags:
+        - Interview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Interview ID
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - responses
+              properties:
+                responses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      question_id:
+                        type: string
+                        example: "q_001"
+                      text:
+                        type: string
+                        example: "In my previous role as a software engineer..."
+                      elapsed_seconds:
+                        type: integer
+                        example: 120
+                      audio_s3_key:
+                        type: string
+                        example: "audio/user123/interview456/response789.webm"
+      responses:
+        '200':
+          description: Interview responses submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interview_id:
+                    type: string
+                    example: "ivw_1729234567890_abc123def"
+                  status:
+                    type: string
+                    example: submitted
+                  received_count:
+                    type: integer
+                    example: 5
+        '400':
+          description: Invalid request data
+        '404':
+          description: Interview not found
+        '500':
+          description: Internal server error
+
+  /interviews/{id}/feedback:
+    get:
+      summary: Get interview feedback
+      description: Gets interview feedback with polling support for async processing
+      tags:
+        - Interview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Interview ID
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: Interview feedback retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewFeedback'
+        '400':
+          description: User ID is required
+        '404':
+          description: Interview session not found
+        '500':
+          description: Internal server error
+
+  /interviews/history:
+    get:
+      summary: Get interview history
+      description: Retrieves all completed interview sessions with scores for the authenticated user. Only returns interviews that have been completed and have feedback scores.
+      tags:
+        - Interview
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: Interview history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviews:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InterviewHistoryItem'
+                  total:
+                    type: integer
+                    example: 5
+                    description: Total number of scored interviews
+        '400':
+          description: User ID is required
+        '500':
+          description: Internal server error
+
+  # Question Generation Endpoints
+  /interviews/{interviewId}/questions:
+    post:
+      summary: Generate customized interview questions for a session
+      description: Generates and stores interview questions for a specific interview session based on the user profile and requested type.
+      tags:
+        - Question Generation
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Interview session ID
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer JWT token for user profile access
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [behavioral, technical, psychometric]
+                  example: behavioral
+                  description: Type of interview questions to generate
+                count:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+                  example: 5
+                  description: Number of questions to generate
+      responses:
+        '200':
+          description: Questions generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Question type is required"
+                  code:
+                    type: string
+                    example: "MISSING_INTERVIEW_TYPE"
+        '401':
+          description: Authorization required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Authorization header with Bearer token is required"
+                  code:
+                    type: string
+                    example: "MISSING_AUTH_TOKEN"
+        '404':
+          description: Interview session not found
+        '500':
+          description: Internal server error
+
+  /interviews/{interviewId}/questions/{questionId}/hint:
+    post:
+      summary: Generate a short hint for a specific question
+      description: Returns a concise GPT-generated hint tailored to the current question and user prompt.
+      tags:
+        - Question Generation
+      parameters:
+        - name: interviewId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Interview session ID
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Question ID within the interview session
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer JWT token for user profile access
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  example: "Need help highlighting my impact on this project."
+                  description: User-provided context or question for the hint
+      responses:
+        '200':
+          description: Hint generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interview_id:
+                    type: string
+                    example: "ivw_1729234567890_abc123def"
+                  question_id:
+                    type: string
+                    example: "q1"
+                  hint:
+                    type: string
+                    example: "Highlight the result with quantified team impact."
+        '400':
+          description: Invalid request data
+        '401':
+          description: Authorization required
+        '404':
+          description: Interview or question not found
+        '500':
+          description: Internal server error
+
+
+  # Dashboard Analytics Endpoints
+  /dashboard/readiness-trend:
+    get:
+      summary: Get readiness trend data
+      description: Returns readiness trend points with optional date filtering and GPT-generated insights
+      tags:
+        - Dashboard
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Start date for filtering (YYYY-MM-DD)
+          example: "2025-07-01"
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: End date for filtering (YYYY-MM-DD)
+          example: "2025-10-10"
+      responses:
+        '200':
+          description: Readiness trend data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessTrend'
+        '400':
+          description: User ID is required
+        '404':
+          description: No readiness trend data found
+        '500':
+          description: Internal server error
+
+  /dashboard/type-radar:
+    get:
+      summary: Get interview type radar chart data
+      description: Returns performance scores by interview type with GPT insights
+      tags:
+        - Dashboard
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: window
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d+d$'
+            default: "90d"
+          description: Time window for data (e.g., "90d", "30d", "180d")
+          example: "90d"
+      responses:
+        '200':
+          description: Type radar data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeRadar'
+        '400':
+          description: Invalid window format or User ID is required
+        '404':
+          description: No interview data found in the specified time window
+        '500':
+          description: Internal server error
+
+  # File Management Endpoints
+  /signed-url:
+    post:
+      summary: Generate signed URL for S3 operations
+      description: Generates a signed URL for S3 operations (audio files only)
+      tags:
+        - File Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+                - operation
+              properties:
+                key:
+                  type: string
+                  example: "audio/user123/interview456/response789.webm"
+                operation:
+                  type: string
+                  enum: [get, put]
+                  example: "put"
+                contentType:
+                  type: string
+                  example: "audio/webm"
+                expiresIn:
+                  type: integer
+                  example: 3600
+      responses:
+        '200':
+          description: Signed URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signed_url:
+                    type: string
+                    example: "https://s3.amazonaws.com/bucket/key?signature=..."
+                  expires_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+  /signed-url/audio:
+    post:
+      summary: Generate signed URL for audio file upload
+      description: Generates a signed URL specifically for audio file upload
+      tags:
+        - File Management
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - interview_id
+                - response_id
+              properties:
+                interview_id:
+                  type: string
+                  example: "ivw_1729234567890_abc123def"
+                response_id:
+                  type: string
+                  example: "resp_001"
+      responses:
+        '200':
+          description: Signed URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signed_url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+                  key:
+                    type: string
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+  /signed-url/{key}:
+    get:
+      summary: Generate signed URL for file download
+      description: Generates a signed URL for downloading files from S3
+      tags:
+        - File Management
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: S3 object key
+        - name: expiresIn
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 3600
+          description: Expiration time in seconds
+      responses:
+        '200':
+          description: Signed URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signed_url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+  /signed-url/batch:
+    post:
+      summary: Generate multiple signed URLs
+      description: Generates multiple signed URLs in one request (max 10)
+      tags:
+        - File Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - urls
+              properties:
+                urls:
+                  type: array
+                  maxItems: 10
+                  items:
+                    type: object
+                    required:
+                      - key
+                      - operation
+                    properties:
+                      key:
+                        type: string
+                      operation:
+                        type: string
+                        enum: [get, put]
+                      contentType:
+                        type: string
+                      expiresIn:
+                        type: integer
+      responses:
+        '200':
+          description: Signed URLs generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                        success:
+                          type: boolean
+                        data:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            signed_url:
+                              type: string
+                            expires_at:
+                              type: string
+                        error:
+                          type: string
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+  # Story Bank Endpoints
+  /story-bank:
+    post:
+      summary: Save story to story bank
+      description: Saves a story from interview response to the story bank
+      tags:
+        - Story Bank
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - transcript
+              properties:
+                interview_id:
+                  type: string
+                  example: "ivw_001"
+                question_id:
+                  type: string
+                  example: "q_001"
+                response_id:
+                  type: string
+                  example: "r_1002"
+                title:
+                  type: string
+                  example: "Experience in Resolving Team Conflicts"
+                transcript:
+                  type: string
+                  example: "At my previous company..."
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["conflict", "communication", "leadership"]
+      responses:
+        '201':
+          description: Story saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  story_id:
+                    type: string
+                    example: "st_9001"
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+    get:
+      summary: Query stories from story bank
+      description: Retrieves stories with pagination and tag filtering
+      tags:
+        - Story Bank
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Page size
+        - name: tags
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list of tags to filter by
+          example: "conflict,leadership"
+      responses:
+        '200':
+          description: Stories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Story'
+                  total:
+                    type: integer
+                    example: 50
+                  page:
+                    type: integer
+                    example: 1
+                  size:
+                    type: integer
+                    example: 20
+                  totalPages:
+                    type: integer
+                    example: 3
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+
+  /story-bank/tags:
+    get:
+      summary: Get all available story tags
+      description: Retrieves all unique tags used in user's stories
+      tags:
+        - Story Bank
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        '200':
+          description: Tags retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                    example: ["conflict", "leadership", "teamwork", "problem-solving"]
+        '400':
+          description: User ID is required
+        '500':
+          description: Internal server error
+
+  /story-bank/{id}:
+    get:
+      summary: Get specific story by ID
+      description: Retrieves a specific story by its ID
+      tags:
+        - Story Bank
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Story ID
+      responses:
+        '200':
+          description: Story retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Story'
+        '400':
+          description: Invalid request data
+        '404':
+          description: Story not found
+        '500':
+          description: Internal server error
+
+    put:
+      summary: Update specific story
+      description: Updates a specific story by its ID
+      tags:
+        - Story Bank
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Story ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                transcript:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Story updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Story'
+        '400':
+          description: Invalid request data
+        '404':
+          description: Story not found
+        '500':
+          description: Internal server error
+
+    delete:
+      summary: Delete specific story
+      description: Deletes a specific story by its ID
+      tags:
+        - Story Bank
+      parameters:
+        - name: x-user-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Story ID
+      responses:
+        '200':
+          description: Story deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Story deleted successfully"
+        '400':
+          description: Invalid request data
+        '404':
+          description: Story not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    Story:
+      type: object
+      properties:
+        story_id:
+          type: string
+          example: "st_1729234567890_abc123def"
+        user_id:
+          type: string
+          example: "user_123"
+        interview_id:
+          type: string
+          example: "ivw_001"
+        question_id:
+          type: string
+          example: "q_001"
+        response_id:
+          type: string
+          example: "r_1002"
+        title:
+          type: string
+          example: "Experience in Resolving Team Conflicts"
+        transcript:
+          type: string
+          example: "At my previous company, I encountered a situation where two team members had conflicting approaches to a project..."
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["conflict", "communication", "leadership"]
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-18T06:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-10-18T06:30:00Z"
+
+    InterviewHistoryItem:
+      type: object
+      properties:
+        interview_id:
+          type: string
+          example: "ivw_1729234567890_abc123def"
+          description: Unique identifier for the interview session
+        type:
+          type: string
+          enum: [behavioral, technical, psychometric]
+          example: behavioral
+          description: Type of interview
+        question_count:
+          type: integer
+          example: 5
+          description: Number of questions in the interview
+        duration_seconds:
+          type: integer
+          example: 1800
+          description: Duration of the interview in seconds
+        status:
+          type: string
+          example: "completed"
+          description: Status of the interview (always "completed" for history items)
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-18T06:30:00Z"
+          description: Timestamp when the interview was created
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-10-18T07:00:00Z"
+          description: Timestamp when the interview was completed
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 85
+          description: Overall interview score (0-100)
+
+    InterviewFeedback:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [processing, ready]
+          example: "ready"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedbackItem'
+        overall:
+          $ref: '#/components/schemas/OverallScore'
+
+    FeedbackItem:
+      type: object
+      properties:
+        question:
+          type: string
+          example: "Tell me about a time you resolved a conflict with a team member"
+        answer:
+          type: string
+          example: "In my previous role as a software engineer, I encountered a situation where..."
+        feedback:
+          $ref: '#/components/schemas/FeedbackDetails'
+
+    FeedbackDetails:
+      type: object
+      properties:
+        star:
+          $ref: '#/components/schemas/StarFeedback'
+        keywords:
+          $ref: '#/components/schemas/KeywordFeedback'
+        filler_words:
+          $ref: '#/components/schemas/FillerWordsFeedback'
+        confidence:
+          $ref: '#/components/schemas/ConfidenceFeedback'
+
+    StarFeedback:
+      type: object
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.85
+          description: "Overall STAR score (0-1)"
+        breakdown:
+          type: object
+          properties:
+            s:
+              type: number
+              minimum: 0
+              maximum: 1
+              example: 0.9
+              description: "Situation score"
+            t:
+              type: number
+              minimum: 0
+              maximum: 1
+              example: 0.8
+              description: "Task score"
+            a:
+              type: number
+              minimum: 0
+              maximum: 1
+              example: 0.85
+              description: "Action score"
+            r:
+              type: number
+              minimum: 0
+              maximum: 1
+              example: 0.85
+              description: "Result score"
+        tips:
+          type: array
+          items:
+            type: string
+          example: ["Be more specific about the actions you took", "Quantify the results with concrete metrics"]
+
+    KeywordFeedback:
+      type: object
+      properties:
+        matched:
+          type: array
+          items:
+            type: string
+          example: ["collaboration", "problem-solving", "communication"]
+          description: "Keywords that were successfully used"
+        missing:
+          type: array
+          items:
+            type: string
+          example: ["leadership", "initiative", "stakeholder management"]
+          description: "Important keywords that were missing"
+
+    FillerWordsFeedback:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: 0
+          example: 5
+          description: "Total count of filler words used"
+        top:
+          type: array
+          items:
+            type: string
+          example: ["um", "like", "you know"]
+          description: "Most frequently used filler words"
+
+    ConfidenceFeedback:
+      type: object
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.8
+          description: "Overall confidence score"
+        prosody:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.75
+          description: "Speech rhythm and intonation score"
+        fluency:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.85
+          description: "Speech fluency score"
+
+    OverallScore:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 85
+          description: "Overall interview performance score (0-100)"
+
+    ReadinessTrend:
+      type: object
+      properties:
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+        gpt_insights:
+          $ref: '#/components/schemas/ReadinessTrendInsights'
+
+    TrendPoint:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2025-09-01"
+          description: "Date of the data point"
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 58
+          description: "Readiness score for this date"
+
+    ReadinessTrendInsights:
+      type: object
+      properties:
+        summary:
+          type: string
+          example: "Your overall readiness has steadily improved over the past 6 weeks (+16). The improvement from 09/01 to 09/15 mainly comes from a more complete STAR structure in behavioral questions."
+          description: "GPT-generated summary of the trend"
+        recommendations:
+          type: array
+          items:
+            type: string
+          example:
+            - "Continue short practice sessions 2–3 times per week, focusing on the technical question framework first, then expanding on details."
+            - "Explicitly quantify results in your answers such as reduce latency by 30 percent or double throughput."
+          description: "GPT-generated recommendations for improvement"
+
+    TypeRadar:
+      type: object
+      properties:
+        scores:
+          $ref: '#/components/schemas/TypeRadarScores'
+        gpt_insights:
+          $ref: '#/components/schemas/TypeRadarInsights'
+
+    TypeRadarScores:
+      type: object
+      properties:
+        behavioral:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 78
+          description: "Average score for behavioral interviews"
+        technical:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 65
+          description: "Average score for technical interviews"
+        psychometric:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 70
+          description: "Average score for psychometric assessments"
+
+    TypeRadarInsights:
+      type: object
+      properties:
+        strengths:
+          type: array
+          items:
+            type: string
+          example:
+            - "Strong performance in behavioral interviews — good STAR structure coverage, with concrete examples and supporting data."
+          description: "Areas where the user performs well"
+        weaknesses:
+          type: array
+          items:
+            type: string
+          example:
+            - "Technical questions show insufficient coverage in system design dimensions; low keyword hit rate for scalability and consistency."
+            - "Psychometric responses are somewhat formulaic — could benefit from more self-reflection and contextual details."
+          description: "Areas that need improvement"
+        suggested_focus:
+          type: array
+          items:
+            type: string
+          example:
+            - "Technical questions: For each question, outline 3–5 checkpoints such as architectural boundaries, bottlenecks, and trade-offs."
+            - "Psychometric questions: Use the STAR-L Reflection structure — after the R Result, add a short self-improvement plan."
+          description: "Specific recommendations for focused improvement"
+
+    QuestionResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [behavioral, technical, psychometric]
+          example: "behavioral"
+          description: "Type of questions generated"
+        count:
+          type: integer
+          example: 5
+          description: "Number of questions generated"
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        user_context:
+          $ref: '#/components/schemas/UserContext'
+        generated_at:
+          type: string
+          format: date-time
+          example: "2025-10-18T06:30:00Z"
+          description: "Timestamp when questions were generated"
+
+    Question:
+      type: object
+      properties:
+        question_id:
+          type: string
+          example: "q1"
+          description: "Unique identifier for the question"
+        order:
+          type: integer
+          example: 1
+          description: "Order of the question in the set"
+        question_type:
+          type: string
+          enum: [behavioral, technical, psychometric]
+          example: "behavioral"
+          description: "Type of the question"
+        question_text:
+          type: string
+          example: "Describe a time when you faced a significant challenge at work. How did you resolve it?"
+          description: "The actual question text"
+        category:
+          type: string
+          example: "Problem Solving"
+          description: "Category or topic of the question"
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          example: "medium"
+          description: "Difficulty level of the question"
+        duration_seconds:
+          type: integer
+          example: 120
+          description: "Expected response duration in seconds"
+
+    UserContext:
+      type: object
+      nullable: true
+      properties:
+        name:
+          type: string
+          example: "John"
+          description: "User's first name"
+        job_title:
+          type: string
+          example: "Software Engineer"
+          description: "User's target job title"
+        industry:
+          type: string
+          example: "Technology"
+          description: "User's target industry"
+      description: "User context information (null if profile fetch failed)"
+
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Interview
+    description: Interview management and feedback endpoints
+  - name: Question Generation
+    description: Customized interview question generation endpoints
+  - name: Dashboard
+    description: Dashboard analytics and insights endpoints
+  - name: File Management
+    description: File upload and signed URL endpoints
+  - name: Story Bank
+    description: Story banking and management endpoints

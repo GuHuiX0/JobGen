@@ -1,0 +1,235 @@
+/**
+ * ============================================================================
+ * Global Stylesheet (Tailwind + macOS-Inspired UI)
+ * ----------------------------------------------------------------------------
+ * Provides project-wide styling including:
+ *  - Tailwind CSS layer imports (base, components, utilities)
+ *  - Global typography and font smoothing
+ *  - macOS-inspired glassmorphism components
+ *  - Button, input, and interactive UI utilities
+ *  - Common animation utilities and scrollbar styling
+ *  - Accessibility rules for motion reduction
+ *
+ * Purpose:
+ * Ensures consistent visual design, maintainability, and a modern UI aesthetic
+ * that supports the entire application.
+ * ============================================================================
+ */
+
+/* ------------------------------------------
+   Tailwind Layer Imports
+------------------------------------------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------
+   Custom Font: Orbitron
+   (Used for sci-fi styled headings and labels)
+------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap');
+
+:root {
+  --font-orbitron: 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                    Roboto, sans-serif;
+}
+
+@layer base {
+  /** Utility class for applying the Orbitron font */
+  .font-orbitron {
+    font-family: var(--font-orbitron);
+  }
+}
+
+/* ------------------------------------------
+   Global Defaults (Typography / Smoothing)
+------------------------------------------- */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI',
+               'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
+               'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f5f7;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+               monospace;
+}
+
+/**
+ * ============================================================================
+ * macOS-Inspired Components
+ * ----------------------------------------------------------------------------
+ * Includes glassmorphism cards, button variants, subtle noise overlays,
+ * and custom inputs. These components are used throughout the UI layer
+ * to ensure a consistent Apple-like visual style.
+ * ============================================================================
+ */
+@layer components {
+
+  /* Glass window-style container */
+  .macos-window {
+    @apply bg-white/60 rounded-2xl border border-gray-200/60 backdrop-blur-lg;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+    transition: box-shadow .2s ease, transform .2s ease, background-color .2s ease;
+  }
+  .macos-window:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.16);
+    transform: translateY(-1px);
+  }
+
+  /* Subtle grain/noise texture layer */
+  .macos-noise {
+    background-image: radial-gradient(rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+
+  /* Button variants */
+  .macos-button-primary {
+    @apply px-4 py-2 rounded-xl font-semibold text-white bg-blue-500 shadow-md
+           backdrop-blur-md hover:bg-blue-600 active:bg-blue-700 active:scale-95
+           transition-all duration-200 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1;
+  }
+
+  .macos-button-secondary {
+    @apply px-4 py-2 rounded-xl font-medium text-gray-800 border border-gray-300
+           backdrop-blur-md hover:bg-gray-100 active:scale-95 transition-all
+           duration-200 focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-gray-300;
+  }
+
+  .macos-button-danger {
+    @apply px-4 py-2 rounded-xl font-semibold text-white bg-red-500 shadow-md
+           backdrop-blur-md hover:bg-red-600 active:bg-red-700 active:scale-95
+           transition-all duration-200 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1;
+  }
+
+  /* Icon-only control button */
+  .macos-button-icon {
+    @apply p-2 rounded-lg hover:bg-gray-100 transition-colors;
+  }
+
+  /* Input field */
+  .macos-input {
+    @apply w-full px-3 py-2 rounded-xl border border-gray-300/80 text-gray-800
+           bg-white/70 backdrop-blur-md focus:outline-none focus:ring-2
+           focus:ring-blue-400 focus:border-transparent transition-all duration-200;
+  }
+
+  /* Disabled component state */
+  .macos-disabled {
+    @apply opacity-60 cursor-not-allowed pointer-events-none;
+    box-shadow: none;
+  }
+}
+
+/**
+ * ============================================================================
+ * Animation Utilities & Scrollbar Styling
+ * ----------------------------------------------------------------------------
+ * Contains reusable transitions, micro-animations, selection effects, and
+ * custom minimal scrollbars. Includes accessibility support to disable
+ * non-essential animations when motion reduction is preferred.
+ * ============================================================================
+ */
+@layer utilities {
+
+  /* Basic fade and slide animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .animate-fadeIn { animation: fadeIn .5s ease-out forwards; }
+  .animate-slideInLeft { animation: slideInLeft .6s ease-out forwards; }
+  .animate-slideInRight { animation: slideInRight .6s ease-out forwards; }
+
+  /* Card interaction animations */
+  @keyframes fadeInUp {
+    0%   { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pop {
+    0%   { transform: scale(.98); }
+    60%  { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  @keyframes pulseRing {
+    0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.35); }
+    70%  { box-shadow: 0 0 0 14px rgba(99,102,241,0); }
+    100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+  }
+  @keyframes sheen {
+    0%   { transform: translateX(-130%) skewX(-12deg); opacity: 0; }
+    35%  { opacity: .9; }
+    100% { transform: translateX(230%) skewX(-12deg); opacity: 0; }
+  }
+  @keyframes checkPop {
+    0%   { opacity: 0; transform: scale(.8) translateY(6px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .animate-fade-in-up   { animation: fadeInUp .28s ease-out both; }
+  .animate-pop          { animation: pop .28s cubic-bezier(.2,.9,.3,1.2) both; }
+  .animate-pulse-ring   { animation: pulseRing 1.4s ease-out infinite; }
+  .animate-check        { animation: checkPop .18s ease-out both; }
+
+  /* Selection sheen effect */
+  .selected-sheen { position: relative; }
+  .selected-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,.9) 45%,
+      rgba(255,255,255,0) 100%
+    );
+    mix-blend-mode: screen;
+    transform: translateX(-130%) skewX(-12deg);
+    animation: sheen .9s ease-out .05s 1;
+    border-radius: inherit;
+  }
+
+  /* Minimal custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.1);
+    border-radius: 10px;
+    transition: background .3s ease;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,.25);
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.1) transparent;
+  }
+
+  /* Reduced-motion accessibility handling */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up,
+    .animate-pop,
+    .animate-pulse-ring,
+    .animate-check {
+      animation: none !important;
+    }
+  }
+}

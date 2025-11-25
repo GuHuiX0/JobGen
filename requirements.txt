@@ -1,0 +1,12 @@
+# Core scientific stack for voice_analysis module
+numpy>=1.24
+scipy>=1.10
+
+# Audio and signal processing
+librosa>=0.10
+soundfile>=0.12
+
+# Testing
+pytest>=7.0
+
+
