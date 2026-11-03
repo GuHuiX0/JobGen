@@ -28,7 +28,7 @@ This application simulates a real interview environment where users can answer q
 - **Language**: JavaScript (ES Modules)
 - **Voice Processing**: Python 3.11 (invoked as a child process for analysis)
 - **Database**: MongoDB
-- **Authentication**: JWT (JSON Web Tokens)
+- **User context**: Requests use the `x-user-id` header; the Express entry point does not register login or registration routes.
 - **Storage**: AWS S3 (for audio file persistence)
 
 ### AI & ML
@@ -37,7 +37,7 @@ This application simulates a real interview environment where users can answer q
 
 ## Quick Start (Docker)
 
-The easiest way to run the application is using Docker Compose. This will set up the Frontend, Backend, and MongoDB database automatically.
+Docker Compose defines the frontend, backend, and MongoDB services. The backend validates external-service credentials at startup, so configure the environment before starting the stack.
 
 ### Prerequisites
 - Docker Desktop (with Docker Compose v2)
@@ -51,29 +51,32 @@ The easiest way to run the application is using Docker Compose. This will set up
    cd JobGen
    ```
 
-2. **Start the application**
+2. **Configure the backend**
+
+   Create `backend/.env` using the variables below. The Compose bind mount exposes this file at `/app/.env`, where the backend loads it with dotenv. Supply valid OpenAI and AWS credentials for the corresponding features. Set `PORT=5000` to match the container port mapping.
+
+3. **Start the application**
    ```bash
    docker compose up --build
    ```
    *Note: The first build may take a few minutes to install both Node.js and Python dependencies.*
 
-3. **Access the Application**
+4. **Access the Application**
    - **Frontend (UI)**: [http://localhost:8080](http://localhost:8080)
    - **Backend (API)**: [http://localhost:8081](http://localhost:8081)
 
-4. **Default Accounts**
-   - **Admin**: `admin` / `password123`
-   - **User**: `user` / `password456`
+The MongoDB initialization script creates collections and indexes, but does not seed application login accounts. The MongoDB root credentials in Compose are database credentials, not application accounts.
+
+Check the backend at [http://localhost:8081/health](http://localhost:8081/health) and inspect the API documentation at [http://localhost:8081/api-docs](http://localhost:8081/api-docs). A successful health response alone does not verify OpenAI or S3 operations.
 
 ## Environment Variables
 
-The application comes with default values in `docker-compose.yml` for immediate testing. For production or custom configuration, create a `.env` file in the root directory:
+Create `backend/.env` for the supplied Compose setup. The configuration module requires `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET_NAME`, `OPENAI_API_KEY`, and `MONGODB_URI` on startup:
 
 ```env
 # Backend Configuration
 PORT=5000
-NODE_ENV=production
-JWT_SECRET_KEY=your-secure-secret-key
+NODE_ENV=development
 
 # Database
 MONGODB_URI=mongodb://admin:password123@mongodb:27017/ai-coach?authSource=admin
@@ -81,7 +84,7 @@ MONGODB_URI=mongodb://admin:password123@mongodb:27017/ai-coach?authSource=admin
 # AI Services
 OPENAI_API_KEY=sk-your-openai-key
 
-# AWS S3 (Optional for local dev, required for persistent audio storage)
+# AWS S3 (required by the current startup configuration)
 AWS_ACCESS_KEY_ID=your-aws-key
 AWS_SECRET_ACCESS_KEY=your-aws-secret
 S3_BUCKET_NAME=your-bucket-name
@@ -117,14 +120,16 @@ AWS_REGION=us-east-1
 
 ## API Documentation
 
-The backend exposes a RESTful API. Key endpoints include:
+The Express entry point registers these routes and route groups:
 
-- **Auth**: `POST /api/auth/login`, `POST /api/auth/register`
-- **Interviews**: `POST /api/interviews` (Create session), `GET /api/interviews/history`
-- **Submission**: `POST /api/interviews/:id/submit` (Submit audio/text responses)
-- **Feedback**: `GET /api/interviews/:id/feedback` (Retrieve AI analysis)
+- `GET /health`: process health.
+- `GET /interview/types`: available interview types.
+- `/interviews`: interview and question routes.
+- `/signed-url`: audio-storage URL routes.
+- `/dashboard`: dashboard routes.
+- `/story-bank`: story routes.
 
-Full API documentation (Swagger/OpenAPI) is available at `backend/swagger.yaml`.
+Requests use `x-user-id` for user context. Consult [the route implementations](backend/src/routes) and [Swagger specification](backend/swagger.yaml) for individual operations. The current entry point does not mount the `/api/auth/login` or `/api/auth/register` endpoints previously listed here.
 
 ## Testing
 
