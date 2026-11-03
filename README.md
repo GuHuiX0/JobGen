@@ -47,13 +47,13 @@ The easiest way to run the application is using Docker Compose. This will set up
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd "capstone-project-25t3-9900-f09c-almond"
+   git clone https://github.com/GuHuiX0/JobGen.git
+   cd JobGen
    ```
 
 2. **Start the application**
    ```bash
-   docker-compose up --build
+   docker compose up --build
    ```
    *Note: The first build may take a few minutes to install both Node.js and Python dependencies.*
 
